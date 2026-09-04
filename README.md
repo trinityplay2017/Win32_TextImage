@@ -10,66 +10,58 @@ Simple C++ console project that loads image files (JPG, PNG, BMP, etc.) and perf
 
 ## Requirements
 - Windows 10 or later
-- Visual Studio 2019/2022 with "Desktop development with C++" workload
+- Visual Studio 2019/2022 with **"Desktop development with C++"** workload
 - Windows 10/11 SDK
-- C++/WinRT (built-in or via NuGet `Microsoft.Windows.CppWinRT`)
+- **Must build as x64** (x86 has more linking issues)
 
-## Build Instructions
+## Important Build Notes (fixes the linker errors you saw)
 
-### Visual Studio (recommended)
-1. Open Visual Studio → Create a new project → **Console App** (C++)
-2. Project Properties → Configuration Properties → General → **C++ Language Standard** = ISO C++17 or later
-3. Project Properties → C/C++ → General → **Additional Include Directories**: add path if needed
-4. Enable Windows Runtime:  
-   - C/C++ → General → **Consume Windows Runtime Extension** = Yes (`/ZW`)  
-   **OR** (preferred modern way) install NuGet package `Microsoft.Windows.CppWinRT` and use pure C++/WinRT headers.
-5. Replace the default source with the content from `src/main.cpp`
-6. Build for **x64** (Debug or Release)
+Your previous command used `/SUBSYSTEM:WINDOWS` → that expects `WinMain`, but this project uses `wmain` (console entry point).
 
-### Quick note on linking
-You may need to link `WindowsApp.lib` in some configurations (Linker → Input → Additional Dependencies).
+**Correct way:**
+
+### Option 1 – Visual Studio (easiest)
+1. Create new project → **Console App** (C++)
+2. Set platform to **x64**
+3. Project Properties → C/C++ → Language → C++ Language Standard = **ISO C++17**
+4. Project Properties → Linker → System → **SubSystem = Console** (`/SUBSYSTEM:CONSOLE`)
+5. Replace source with `src/main.cpp`
+6. Build
+
+The source already contains:
+```cpp
+#pragma comment(lib, "WindowsApp.lib")
+#pragma comment(lib, "oleaut32.lib")
+#pragma comment(lib, "ole32.lib")
+```
+
+### Option 2 – Command line (cl.exe)
+```bat
+cl /EHsc /std:c++17 /DUNICODE /D_UNICODE ^
+   src\main.cpp ^
+   /link /SUBSYSTEM:CONSOLE /MACHINE:X64 ^
+   WindowsApp.lib oleaut32.lib ole32.lib user32.lib
+```
+
+Do **NOT** use `/SUBSYSTEM:WINDOWS`.
+
+### If you still get WINRT_IMPL_* unresolved symbols
+1. Make sure you are using the **x64** toolset.
+2. Install NuGet package **Microsoft.Windows.CppWinRT** (recommended modern way).
+3. Or enable `/ZW` (Consume Windows Runtime Extension) in project properties (older method).
 
 ## Usage
 ```bash
 Win32_TextImage.exe "C:\path\to\your\image.png"
 ```
 
-Example:
-```
-Loading image: sample.png
-Recognizing text...
-
-=== Full OCR Text ===
-Hello World
-This is a sample text from an image.
-
-=== Words Found ===
-Hello
-World
-This
-is
-a
-sample
-text
-from
-an
-image.
-```
-
 ## Language Support
-The code uses `OcrEngine::TryCreateFromUserProfileLanguages()` by default (best for most users).  
-You can change it to a specific language, e.g.:
+Default uses the languages installed on your Windows profile.
+You can force a language in code:
 ```cpp
-Windows::Globalization::Language lang{ L"en-US" };
-auto engine = OcrEngine::TryCreateFromLanguage(lang);
+Language lang{ L"en-US" };   // or L"zh-CN", L"ja", etc.
+OcrEngine engine = OcrEngine::TryCreateFromLanguage(lang);
 ```
-
-Supported languages depend on what is installed on the system (Settings → Time & Language → Language → add language packs that support OCR).
-
-## Notes
-- Works with common image formats supported by `BitmapDecoder` (JPEG, PNG, BMP, TIFF, GIF…).
-- OCR accuracy depends on image quality, contrast, font size, and installed language packs.
-- This is a minimal example focused on loading an image and extracting text/words.
 
 ## Project Structure
 ```
@@ -77,7 +69,7 @@ Win32_TextImage/
 ├── README.md
 ├── src/
 │   └── main.cpp
-└── (optional) CMakeLists.txt
+└── CMakeLists.txt
 ```
 
 ## License
