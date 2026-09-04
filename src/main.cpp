@@ -1,7 +1,7 @@
 // Win32_TextImage - Simple image OCR using Windows.Media.Ocr (C++/WinRT)
-// Requires Windows 10+, Visual Studio with C++ desktop + Windows SDK
-// Build as x64 Console App with C++/WinRT support
+// Build as x64 Console application
 
+#include <winrt/base.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.Storage.h>
@@ -13,6 +13,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
+
+#pragma comment(lib, "WindowsApp.lib")
+#pragma comment(lib, "oleaut32.lib")
+#pragma comment(lib, "ole32.lib")
 
 using namespace winrt;
 using namespace Windows::Foundation;
@@ -103,7 +107,7 @@ int wmain(int argc, wchar_t* argv[])
             std::wcout << word << std::endl;
         }
     }
-    catch (winrt::hresult_error const& ex)
+    catch (hresult_error const& ex)
     {
         std::wcerr << L"WinRT Error: " << ex.message().c_str() << std::endl;
         return 1;
